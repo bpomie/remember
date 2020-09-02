@@ -1,0 +1,603 @@
+---
+title: "Time-freqeuncy data | Nonverbal category knowledge limits the amount of information encoded in object representation"
+autohr: Barbara Pomiechowska, Teodora Gliga
+output: 
+ html_document:
+    toc: yes
+    toc_float: yes
+---
+
+```{r message=FALSE, warning=FALSE, , paged.print=FALSE, include=FALSE}
+library(readxl)
+library(lsr) 
+library(tidyr)
+library(plyr)
+library(ggpubr)
+library(ggplot2)
+library(emmeans) 
+library(afex)
+library(rstatix)
+library(Rmisc) 
+library(tidyverse)
+library(car) 
+library(sjstats)
+```
+
+# Data
+
+Read in data (create two data frames: dfgamma, dfalpha).
+```{r include=FALSE}
+#Set directory
+wd <- getwd()
+setwd(wd)
+
+#Read in data
+dfgamma  <-  read_excel("data/data_timefreq_gamma.xlsx", sheet = "summary")
+dfalpha  <-  read_excel("data/data_timefreq_alpha.xlsx", sheet = "summary")
+```
+
+Review data structure: dfgamma.
+```{r}
+dfgamma$Experiment <- factor(dfgamma$Experiment)
+dfgamma$Category <- factor(dfgamma$Category)
+str(dfgamma)
+```
+
+Review data structure: dfalpha
+```{r}
+dfalpha$Experiment <- factor(dfalpha$Experiment)
+dfalpha$Category <- factor(dfalpha$Category)
+str(dfgamma)
+```
+
+## Data structure
+
+The files *data_timefreq_gamma.xlsx*, *data_timefreq_alpha.xlsx* contain the average time-frequency data in the gamma (25-45 Hz) and alpha (6-9 Hz) bands. These data are stored in the *summary* sheet and have the following structure:
+
+* $ID$                  -- unique ID identifying each participant
+
+* $Experiment$          -- Experiment 1, Experiment 2
+
+* $Category$            -- Familiar, Unfamiliar
+
+* $Presentation\_left$   -- average activation in the left aoi during presentation (object in full view after sliding onto the stage)
+
+* $Presentation\_right$  -- average activation in the right aoi during presentation (object in full view after sliding onto the stage)
+
+* $Occlusion\_left$      -- average activation in the left aoi during occlusion (object fully invisible after the occluder went up)
+
+* $Occlusion\_right$     -- average activation in the right aoi during occlusion (object fully invisible after the occluder went up)
+
+* $Trials$              -- number of artifact-free trials contributed by each infant
+
+The remaining sheets (*E1_familiar*, *E1_unfamiliar*, *E2_familiar*, *E2_unfamiliar*) contain individual channel data (averaged for each of the respective frequency ranges).
+
+# Gamma (25-45 Hz)
+
+```{r}
+longgamma <- dfgamma %>%
+  gather(key = Condition, value = gamma, c("Presentation_left","Presentation_right",
+                                            "Occlusion_left","Occlusion_right")) %>%
+  mutate(Phase=ifelse(str_detect(Condition,"Presentation"),"Presentation","Occlusion")) %>%
+  mutate(Hemisphere = ifelse(str_detect(Condition,"left"),"Left","Right"))
+```
+
+## Omnibus ANOVA
+
+```{r}
+#Normality
+longgamma %>%
+  group_by(Experiment, Phase, Category, Hemisphere, Condition) %>%
+  shapiro_test(gamma)
+```
+
+- $Experiment$ (1 v. 2) as a between-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+- $Hemisphere$ (left v. right) as a within-subject factor
+- $Phase$ (presentation v. occlusion) as a within-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+aogamma <- aov_car(gamma ~ Experiment*Category*Hemisphere*Phase + 
+               Error(ID/Hemisphere*Phase) + Experiment + Category, 
+             data = longgamma)
+#Display the results
+summary(aogamma)
+eta_sq(aogamma, partial = TRUE)
+```
+
+## Split by Phase
+
+### Presentation
+
+#### ANOVA
+
+Compute mean activation across hemispheres.
+Save it in a new variable (MEAN_presentation).
+```{r}
+dfgamma <- dfgamma %>%
+  mutate(MEAN_presentation = rowMeans(dfgamma[4:5]))
+```
+
+```{r}
+leveneTest(MEAN_presentation ~ Experiment*Category, data = dfgamma)
+```
+
+Run the ANOVA.
+
+- $Experiment$ (1 v. 2) as a between-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+
+```{r}
+#Run the analysis
+agammapres <- aov_car(MEAN_presentation ~ Experiment*Category + 
+               Error(ID) + Experiment + Category, 
+             data = dfgamma)
+#Display the results
+summary(agammapres)
+eta_sq(agammapres, partial = TRUE)
+```
+
+#### Comparisons to baseline
+
+```{r}
+dfgammafamiliar <- filter(dfgamma, Category == "Familiar")
+t.test(dfgammafamiliar$MEAN_presentation, mu = 0, alternative = "two.sided")
+cohensD(dfgammafamiliar$MEAN_presentation, mu = 0)
+```
+
+```{r}
+dfgammaunfamiliar <- filter(dfgamma, Category == "Unfamiliar")
+t.test(dfgammaunfamiliar$MEAN_presentation, mu = 0, alternative = "two.sided")
+cohensD(dfgammaunfamiliar$MEAN_presentation, mu = 0)
+```
+
+#### Figures
+
+Plot.
+```{r}
+plotgamma <- dfgamma %>%
+  group_by(Category) %>%
+  get_summary_stats(MEAN_presentation,type = "mean_se")
+
+pgamma <- ggplot(data = plotgamma,aes(x=Category, y = mean, color=Category, fill=Category,  group=Category)) +
+   theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=14, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="none",
+                axis.title.x = element_blank()) +
+  geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
+  scale_fill_manual(values = c("black","gray60", "black", "gray60")) +
+  scale_color_manual(values = c("black","gray60", "black", "gray60")) +
+  scale_y_continuous(name=(gamma~"-band activity("~mu~"V)"), limits=c(-.1, .2)) 
+
+pgamma
+```
+
+```{r include=FALSE}
+ggsave("plots/figuregammapres1.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+```
+
+```{r}
+m <- stat_summary(geom ="point", fun.y=mean, shape=15, size=4, color="yellow", fill="red", 
+                  position = position_dodge(width = 0.75)) 
+
+boxgamma <- ggplot(data = dfgamma, aes(x=Category, y=MEAN_presentation)) +
+  theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=14, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="none",
+                axis.title.x = element_blank()) +
+  geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
+               alpha = .2, outlier.shape = NA, width = .5) +
+  geom_jitter(aes(color=Category),position = position_jitterdodge(.15), size =1) +
+  scale_y_continuous(name=gamma~"-band activity("~mu~"V)", limits=c(-.4, .4)) +
+  scale_fill_manual(values = c("black", "gray60")) +
+  scale_color_manual(values = c("black", "gray60")) 
+
+boxgamma
+```
+
+```{r include=FALSE}
+ggsave("plots/figuregammapres2.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+```
+
+```{r echo=FALSE}
+fgp <- ggarrange(pgamma, boxgamma,
+          ncol = 2, widths = c(1.5,1),
+          labels = c("1", "2"),
+          common.legend = TRUE, legend = "none")
+
+annotate_figure(fgp,
+               top = text_grob("Presentation: object fully visible", color = "black", face = "bold", size = 16))
+
+```
+
+```{r include=FALSE}
+ggsave("plots/figuregammapres_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+```
+
+
+### Occlusion
+
+Compute mean activation across hemispheres.
+Save it in a new variable (MEAN_occlusion).
+
+```{r}
+dfgamma <- dfgamma %>%
+  mutate(MEAN_occlusion = rowMeans(dfgamma[6:7]))
+```
+
+```{r}
+leveneTest(MEAN_occlusion ~ Experiment*Category, data = dfgamma)
+```
+
+#### ANOVA
+
+Run the ANOVA.
+
+- $Experiment$ (1 v. 2) as a between-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+
+```{r}
+#Run the analysis
+agammaoccl <- aov_car(MEAN_occlusion ~ Experiment*Category + 
+               Error(ID) + Experiment + Category, 
+             data = dfgamma)
+#Display the results
+summary(agammaoccl)
+eta_sq(agammaoccl, partial = TRUE)
+```
+
+#### Figures
+
+Plot.
+```{r}
+plotgammaocclusion <- dfgamma %>%
+  group_by(Category) %>%
+  get_summary_stats(MEAN_occlusion,type = "mean_se")
+
+pgammaocclusion <- ggplot(data = plotgammaocclusion,aes(x=Category, y = mean, color=Category, fill=Category,  group=Category)) +
+   theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=12, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="none",
+                axis.title.x = element_blank()) +
+  geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
+  scale_fill_manual(values = c("black","gray60", "black")) +
+  scale_color_manual(values = c("black","gray60", "black")) +
+  scale_y_continuous(name="Aamplitude (Hz)", limits=c(-.1, .2)) 
+
+pgammaocclusion
+```
+
+```{r include=FALSE}
+ggsave("plots/figuregammaoccl1.png", plot = last_plot(), width = 17, height = 10, units = c("cm"))
+```
+
+```{r}
+m <- stat_summary(geom ="point", fun.y=mean, shape=23, size=4, color="black", fill="yellow", 
+                  position = position_dodge(width = 0.75)) 
+
+boxgammaocclusion <- ggplot(data = dfgamma, aes(x=Category, y=MEAN_occlusion)) +
+  theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=12.5, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="none",
+                axis.title.x = element_blank()) +
+  geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
+               alpha = .2, outlier.shape = NA, width = .5) +
+  geom_jitter(aes(color=Category),position = position_jitterdodge(.25), size = 1) +
+  scale_y_continuous(name="Amplitude (Hz)", limits=c(-.5, .5)) +
+  scale_fill_manual(values = c("black", "gray60")) +
+  scale_color_manual(values = c("black","gray60")) 
+
+boxgammaocclusion
+```
+```{r include=FALSE}
+ggsave("plots/figuregammaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
+```
+
+```{r echo=FALSE}
+fgp <- ggarrange(pgammaocclusion, boxgammaocclusion,
+          ncol = 2, widths = c(1.5,1),
+          labels = c("1", "2"),
+          common.legend = TRUE, legend = "none")
+
+annotate_figure(fgp,
+               top = text_grob("Occlusion: object fully invisible", color = "black", face = "bold", size = 16))
+
+```
+
+```{r include=FALSE}
+ggsave("plots/figuregammaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+```
+
+
+# Alpha (6-9 Hz)
+
+## Omnibus ANOVA
+
+```{r}
+longalpha <- dfalpha %>%
+  gather(key = Condition, value = alpha, c("Presentation_left","Presentation_right",
+                                            "Occlusion_left","Occlusion_right")) %>%
+  mutate(Phase=ifelse(str_detect(Condition,"Presentation"),"Presentaiton","Occlusion")) %>%
+  mutate(Hemisphere = ifelse(str_detect(Condition,"left"),"Left","Right"))
+```
+
+```{r}
+longalpha %>%
+  group_by(Experiment, Phase, Category, Hemisphere, Condition) %>%
+  shapiro_test(alpha)
+```
+
+- $Experiment$ (1 v. 2) as a between-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+- $Hemisphere$ (left v. right) as a within-subject factor
+- $Phase$ (presentation v. occlusion) as a within-subject factor
+
+```{r}
+#Run the analysis
+aoalpha <- aov_car(alpha ~ Experiment*Category*Hemisphere*Phase + 
+               Error(ID/Hemisphere*Phase) + Experiment + Category, 
+             data = longalpha)
+#Display the results
+summary(aoalpha)
+eta_sq(aoalpha, partial = TRUE)
+```
+
+## Split by Phas
+
+### Presentation
+
+```{r}
+longalphapres <- dfalpha %>%
+  gather(key = Hemisphere, value = alpha, c("Presentation_left","Presentation_right"))
+```
+
+#### ANOVA
+
+- $Experiment$ (1 v. 2) as a between-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+- $Hemisphere$ (left v. right) as a within-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+aalphapres <- aov_car(alpha ~ Experiment*Category*Hemisphere + 
+               Error(ID/Hemisphere) + Experiment + Category, 
+             data = longalphapres)
+#Display the results
+summary(aalphapres)
+```
+
+#### Comparisons to baseline
+
+Compute mean activation across hemispheres.
+Save it in a new variable (MEAN_presentation).
+```{r}
+dfalpha <- dfalpha %>%
+  mutate(MEAN_presentation = rowMeans(dfalpha[4:5]))
+```
+
+```{r}
+t.test(dfalpha$MEAN_presentation, mu = 0, alternative = "two.sided")
+cohensD(dfalpha$MEAN_presentation, mu = 0)
+```
+
+#### Figures
+
+Plot.
+```{r}
+plotalphapresentation <- dfalpha %>%
+  group_by(Category) %>%
+  get_summary_stats(MEAN_presentation,type = "mean_se")
+
+palphapresentation <- ggplot(data = plotalphapresentation,
+                          aes(x=Category, y = mean, color=Category, fill=Category,  group=Category)) +
+   theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=12, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="bottom",
+                axis.title.x = element_blank()) +
+  geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
+  scale_fill_manual(values = c("black","gray60", "black","gray60")) +
+  scale_color_manual(values = c("black","gray60", "black","gray60")) +
+  scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-.6, .6)) 
+
+palphapresentation
+```
+
+
+```{r}
+m <- stat_summary(geom ="point", fun.y=mean, shape=23, size=4, color="black", fill="yellow", 
+                  position = position_dodge(width = 0.75)) 
+
+boxalphapres <- ggplot(data = dfalpha,
+                            aes(x=Category, y=MEAN_presentation, fill = Category, color = Category)) +
+  theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=12.5, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="bottom",
+                axis.title.x = element_blank()) +
+  geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
+               alpha = .2, outlier.shape = NA, width = .5) +
+  geom_jitter(aes(color=Category),position = position_jitterdodge(.25), size = 1) +
+  scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-2, 2)) +
+  scale_fill_manual(values = c("black", "gray60","black", "gray60")) +
+  scale_color_manual(values = c("black","gray60","black", "gray60")) 
+
+boxalphapres
+```
+```{r include=FALSE}
+ggsave("plots/figurealphapres2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
+```
+
+```{r echo=FALSE}
+fgp <- ggarrange(palphapresentation, boxalphapres,
+          ncol = 2, widths = c(1.5,1),
+          labels = c("1", "2"),
+          common.legend = TRUE, legend = "bottom")
+
+annotate_figure(fgp,
+               top = text_grob("Presentation: object fully visible", color = "black", face = "bold", size = 16))
+
+```
+
+```{r include=FALSE}
+ggsave("plots/figurealphapres_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+```
+
+
+### Occlusion
+
+```{r}
+longalphaocclusion <- dfalpha %>%
+  gather(key = Hemisphere, value = occlusion_alpha, c("Occlusion_left","Occlusion_right"))
+
+longalphaocclusion$Hemisphere <- factor(longalphaocclusion$Hemisphere, levels = c("Occlusion_left","Occlusion_right"),
+                                        labels = c("Left", "Right"))
+```
+
+#### ANOVA
+
+- $Experiment$ (1 v. 2) as a between-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+- $Hemisphere$ (left v. right) as a within-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+aalphaoccl <- aov_car(occlusion_alpha ~ Experiment*Category*Hemisphere + 
+               Error(ID/Hemisphere) + Experiment + Category, 
+             data = longalphaocclusion)
+#Display the results
+summary(aalphaoccl)
+eta_sq(aalphaoccl, partial = TRUE)
+```
+
+#### Figures
+
+Plot.
+```{r}
+plotalphaocclusion <- longalphaocclusion %>%
+  group_by(Category, Hemisphere) %>%
+  get_summary_stats(occlusion_alpha,type = "mean_se")
+
+palphaocclusion <- ggplot(data = plotalphaocclusion,
+                          aes(x=Category, y = mean, color=Hemisphere, fill=Hemisphere,  group=Hemisphere)) +
+   theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=12, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="bottom",
+                axis.title.x = element_blank()) +
+  geom_bar(stat="identity", position=position_dodge(),width=.7,alpha = 1) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
+  scale_fill_manual(values = c("black","gray50")) +
+  scale_color_manual(values = c("gray50","gray80")) +
+  scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-.6, .6)) 
+
+palphaocclusion
+```
+
+
+```{r}
+m <- stat_summary(geom ="point", fun.y=mean, shape=23, size=4, color="black", fill="yellow", 
+                  position = position_dodge(width = 0.75)) 
+
+boxalphaocclusion <- ggplot(data = longalphaocclusion,
+                            aes(x=Category, y=occlusion_alpha, fill = Hemisphere, color = Hemisphere)) +
+  theme_light() +
+          theme(strip.text = element_text(size = 12),
+                panel.grid.major.y = element_line(colour="grey75"),
+                panel.grid.minor.y = element_blank(),
+                panel.grid.major.x = element_blank(),
+                axis.text.x= element_text(size=12.5, angle=0),
+                axis.text.y= element_text(size=14),
+                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                legend.position="bottom",
+                axis.title.x = element_blank()) +
+  geom_boxplot(aes(fill=Hemisphere), position = position_dodge(.9), 
+               alpha = 1, outlier.shape = NA, width = .5) +
+  geom_jitter(aes(color=Hemisphere),position = position_jitterdodge(.25), size = 1) +
+  scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-2, 2)) +
+  scale_fill_manual(values = c("black","gray50")) +
+  scale_color_manual(values = c("gray50","gray80"))
+
+
+boxalphaocclusion
+```
+
+```{r include=FALSE}
+ggsave("plots/figurealphaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
+```
+
+```{r echo=FALSE}
+fgp <- ggarrange(palphaocclusion, boxalphaocclusion,
+          ncol = 2, widths = c(1.5,1),
+          labels = c("1", "2"),
+          common.legend = TRUE, legend = "bottom")
+
+annotate_figure(fgp,
+               top = text_grob("Occlusion: object fully invisible", color = "black", face = "bold", size = 16))
+
+```
+
+```{r include=FALSE}
+ggsave("plots/figurealphaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+```
+
+#### Comparisons to baseline
+```{r}
+dfalphafamiliar <- subset(dfalpha, Category == "Familiar")
+dfalphaunfamiliar <- subset(dfalpha, Category == "Unfamiliar")
+```
+
+```{r}
+t.test(dfalphafamiliar$Occlusion_left, mu = 0, alternative = "two.sided")
+t.test(dfalphafamiliar$Occlusion_right, mu = 0, alternative = "two.sided")
+```
+
+```{r}
+t.test(dfalphaunfamiliar$Occlusion_left, mu = 0, alternative = "two.sided")
+cohensD(dfalphaunfamiliar$Occlusion_left, mu = 0)
+t.test(dfalphaunfamiliar$Occlusion_right, mu = 0, alternative = "two.sided")
+cohensD(dfalphaunfamiliar$Occlusion_right, mu = 0)
+```
