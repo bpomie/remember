@@ -1,0 +1,366 @@
+---
+title: "NC ERP | Nonverbal category knowledge limits the amount of information encoded in object representations"
+autohr: Barbara Pomiechowska, Teodora Gliga
+output: 
+ html_document:
+    toc: yes
+    toc_float: yes
+---
+
+```{r message=FALSE, warning=FALSE, , paged.print=FALSE, include=FALSE}
+library(readxl)
+library(lsr) 
+library(tidyr)
+library(plyr)
+library(ggpubr)
+library(ggplot2)
+library(emmeans) 
+library(afex)
+library(rstatix)
+library(Rmisc) 
+library(tidyverse)
+library(car) 
+library(sjstats)
+```
+
+# Data
+
+Read in data.
+```{r include=FALSE}
+#Set directory
+wd <- getwd()
+setwd(wd)
+
+#Read in data
+dfnc  <-  read_excel("data/data_erp.xlsx", sheet = "nc")
+```
+
+Check data structure.
+```{r}
+dfnc$Experiment <- factor(dfnc$Experiment)
+dfnc$Category <- factor(dfnc$Category)
+str(dfnc)
+```
+
+
+## Data structure
+
+The file *datasummary.xlsx* contains the average Nc amplitude data in the sheet *nc*:
+
+* $ID$                  -- unique ID identifying each participant
+
+* $Experiment$          -- Experiment 1, Experiment 2
+
+* $Category$            -- Familiar, Unfamiliar
+
+* $NC changeNO$        -- average Nc amplitudes in the no change condition
+
+* $NC changeWITHIN$    -- average Nc amplitudes in the within-category change condition
+
+* $NC changeACROSS$    -- average Nc amplitudes in the across-category change condition
+
+
+# Experiment 1
+
+```{r}
+longe1 <- dfnc %>%
+  gather(key = OcclusionOutcome, value = nc, c("NC_changeNO","NC_changeWITHIN","NC_changeACROSS")) %>%
+  filter(Experiment == "Experiment 1")
+```
+
+## Normality
+
+```{r echo=FALSE}
+longe1 %>%
+  group_by(OcclusionOutcome, Category) %>%
+  shapiro_test(nc)
+```
+
+## Omnibus ANOVA
+
+- $OcclusionOutcome$ (no change v. within-category change v. across-category change) as a within-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+ae1 <- aov_car(nc ~ OcclusionOutcome*Category + 
+               Error(ID/OcclusionOutcome) + Category, 
+             data = longe1)
+#Display the results
+summary(ae1)
+eta_sq(ae1, partial = TRUE)
+```
+
+## Familiar categories
+
+### ANOVA
+
+```{r}
+longe1familiar <- filter(longe1, Category == "Familiar")
+```
+
+- $OcclusionOutcome$ (no change v. within-category change v. across-category change) as a within-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+ae1familiar <- aov_car(nc ~ OcclusionOutcome + Error(ID/OcclusionOutcome), 
+             data = longe1familiar)
+#Display the results
+summary(ae1familiar)
+eta_sq(ae1familiar, partial = TRUE)
+```
+
+#### Followup t tests
+
+```{r}
+e1familiar <- dfnc %>%
+  filter(Experiment == "Experiment 1") %>%
+  filter(Category == "Familiar")
+```
+
+No change v. across-categry change:
+```{r}
+t.test(e1familiar$NC_changeNO,e1familiar$NC_changeACROSS, paired = TRUE)
+cohensD(e1familiar$NC_changeNO,e1familiar$NC_changeACROSS, method = "paired")
+```
+
+No change v. within-categry change:
+```{r}
+t.test(e1familiar$NC_changeNO,e1familiar$NC_changeWITHIN, paired = TRUE)
+cohensD(e1familiar$NC_changeNO,e1familiar$NC_changeWITHIN, method = "paired")
+```
+
+Across-category change v. within-categry change:
+```{r}
+t.test(e1familiar$NC_changeWITHIN,e1familiar$NC_changeACROSS, paired = TRUE)
+cohensD(e1familiar$NC_changeWITHIN,e1familiar$NC_changeACROSS, method = "paired")
+```
+
+## Unfamiliar categories
+
+### ANOVA
+
+```{r}
+longe1unfamiliar <- filter(longe1, Category == "Unfamiliar")
+```
+
+- $OcclusionOutcome$ (no change v. within-category change v. across-category change) as a within-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+ae1unfamiliar <- aov_car(nc ~ OcclusionOutcome + Error(ID/OcclusionOutcome), 
+             data = longe1unfamiliar)
+#Display the results
+summary(ae1unfamiliar)
+eta_sq(ae1unfamiliar, partial = TRUE)
+```
+
+#### Followup t tests
+
+```{r}
+e1unfamiliar <- dfnc %>%
+  filter(Experiment == "Experiment 1") %>%
+  filter(Category == "Unfamiliar")
+```
+
+No change v. across-categry change:
+```{r}
+t.test(e1unfamiliar$NC_changeNO,e1unfamiliar$NC_changeACROSS, paired = TRUE)
+```
+
+No change v. within-categry change:
+```{r}
+t.test(e1unfamiliar$NC_changeNO,e1unfamiliar$NC_changeWITHIN, paired = TRUE)
+```
+
+Across-category change v. within-categry change:
+```{r}
+t.test(e1unfamiliar$NC_changeWITHIN,e1unfamiliar$NC_changeACROSS, paired = TRUE)
+```
+
+# Experiment 2
+
+```{r}
+longe2 <- dfnc %>%
+  gather(key = OcclusionOutcome, value = nc, c("NC_changeNO","NC_changeWITHIN","NC_changeACROSS")) %>%
+  filter(Experiment == "Experiment 2")
+```
+
+## Normality
+
+```{r echo=FALSE}
+longe2 %>%
+  group_by(OcclusionOutcome, Category) %>%
+  shapiro_test(nc)
+```
+
+## Omnibus ANOVA
+
+- $OcclusionOutcome$ (no change v. within-category change v. across-category change) as a within-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+ae2 <- aov_car(nc ~ OcclusionOutcome*Category + 
+               Error(ID/OcclusionOutcome) + Category, 
+             data = longe2)
+#Display the results
+summary(ae2)
+eta_sq(ae2, partial = TRUE)
+```
+
+## Familiar categories / Category-training
+
+### ANOVA
+
+```{r}
+longe2familiar <- filter(longe2, Category == "Familiar")
+```
+
+- $OcclusionOutcome$ (no change v. within-category change v. across-category change) as a within-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+ae2familiar <- aov_car(nc ~ OcclusionOutcome + Error(ID/OcclusionOutcome), 
+             data = longe2familiar)
+#Display the results
+summary(ae2familiar)
+eta_sq(ae2familiar, partial = TRUE)
+```
+
+#### Followup t tests
+
+```{r}
+e2familiar <- dfnc %>%
+  filter(Experiment == "Experiment 2") %>%
+  filter(Category == "Familiar")
+```
+
+No change v. across-categry change:
+```{r}
+t.test(e2familiar$NC_changeNO,e2familiar$NC_changeACROSS, paired = TRUE)
+```
+
+No change v. within-categry change:
+```{r}
+t.test(e2familiar$NC_changeNO,e2familiar$NC_changeWITHIN, paired = TRUE)
+```
+
+Across-category change v. within-categry change:
+```{r}
+t.test(e2familiar$NC_changeWITHIN,e2familiar$NC_changeACROSS, paired = TRUE)
+```
+
+## Unfamiliar categories / Control condition
+
+### ANOVA
+
+```{r}
+e2unfamiliar <- filter(longe2, Category == "Unfamiliar")
+```
+
+- $OcclusionOutcome$ (no change v. within-category change v. across-category change) as a within-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+ae2unfamiliar <- aov_car(nc ~ OcclusionOutcome + Error(ID/OcclusionOutcome), 
+             data = e2unfamiliar)
+#Display the results
+summary(ae2unfamiliar)
+eta_sq(ae2unfamiliar, partial = TRUE)
+```
+
+#### Followup t tests
+
+```{r}
+e2unfamiliar <- dfnc %>%
+  filter(Experiment == "Experiment 2") %>%
+  filter(Category == "Unfamiliar")
+```
+
+No change v. across-categry change:
+```{r}
+t.test(e2unfamiliar$NC_changeNO,e2unfamiliar$NC_changeACROSS, paired = TRUE)
+```
+
+No change v. within-categry change:
+```{r}
+t.test(e2unfamiliar$NC_changeNO,e2unfamiliar$NC_changeWITHIN, paired = TRUE)
+```
+
+Across-category change v. within-categry change:
+```{r}
+t.test(e2unfamiliar$NC_changeWITHIN,e2unfamiliar$NC_changeACROSS, paired = TRUE)
+```
+
+# Experiments 1-2 | comparison
+
+```{r}
+long <- dfnc %>%
+  gather(key = OcclusionOutcome, value = nc, c("NC_changeNO","NC_changeWITHIN","NC_changeACROSS"))
+```
+
+## ANOVA
+
+- $OcclusionOutcome$ (no change v. within-category change v. across-category change) as a within-subject factor
+- $Category$ (familiar v. unfamiliar) as a between-subject factor
+- $Experiment$ (1 v.2) as a between-subject factor
+
+```{r warning=FALSE}
+#Run the analysis
+ae1e2 <- aov_car(nc ~ OcclusionOutcome*Category*Experiment + 
+               Error(ID/OcclusionOutcome) + Category + Experiment, 
+             data = long)
+#Display the results
+summary(ae1e2)
+eta_sq(ae1e2, partial = TRUE)
+```
+
+### Followup tests
+
+#### Familiar categories
+
+```{r}
+familiar <- dfnc %>%
+  filter(Category == "Familiar")
+```
+
+No change v. across-categry change:
+```{r}
+t.test(familiar$NC_changeNO,familiar$NC_changeACROSS, paired = TRUE)
+cohensD(familiar$NC_changeNO,familiar$NC_changeACROSS, method = "paired")
+```
+
+No change v. within-categry change:
+```{r}
+t.test(familiar$NC_changeNO,familiar$NC_changeWITHIN, paired = TRUE)
+```
+
+Across-category change v. within-categry change:
+```{r}
+t.test(familiar$NC_changeWITHIN,familiar$NC_changeACROSS, paired = TRUE)
+```
+
+#### Unfamiliar categories
+
+```{r}
+unfamiliar <- dfnc %>%
+  filter(Category == "Unfamiliar")
+```
+
+No change v. across-categry change:
+```{r}
+t.test(unfamiliar$NC_changeNO,unfamiliar$NC_changeACROSS, paired = TRUE)
+cohensD(unfamiliar$NC_changeNO,unfamiliar$NC_changeACROSS, method = "paired")
+```
+
+No change v. within-categry change:
+```{r}
+t.test(unfamiliar$NC_changeNO,unfamiliar$NC_changeWITHIN, paired = TRUE)
+```
+
+Across-category change v. within-categry change:
+```{r}
+t.test(unfamiliar$NC_changeWITHIN,unfamiliar$NC_changeACROSS, paired = TRUE)
+```
+
