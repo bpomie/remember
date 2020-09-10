@@ -1,6 +1,6 @@
 %% 
 % 
-% Script used to ERP data (grand averages, topoplots) in:
+% Script used to plot the ERP data (grand averages, topoplots) in:
 % Pomiechowska, B., & Gliga, T.: Nonverbal category knowledge limits the amount of information encoded in object representations
 %
 % Loop through the data stored in EEGDATA folder, plot and
