@@ -6,6 +6,8 @@
 % Loop through the data stored in EEGDATA folder, plot and
 % save grand average Nc plots and topolots.
 %
+% Requires EEGLAB.
+%
 %%
 
 clear; clc; close all;
