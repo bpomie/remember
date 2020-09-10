@@ -12,3 +12,4 @@ Pomiechowska, B., & Gliga, T. (submitted). Nonverbal category knowledge limits t
 
 <code>data/</code> contains the data analysed in the manuscript
 
+<code>plots_erp/</code> contains the code and data used for ERP plots
