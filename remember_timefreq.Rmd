@@ -9,21 +9,54 @@ output:
 
 ```{r message=FALSE, warning=FALSE, , paged.print=FALSE, include=FALSE}
 library(readxl)
-library(lsr) 
+
 library(tidyr)
 library(plyr)
 library(ggpubr)
 library(ggplot2)
 library(emmeans) 
-library(afex)
+
 library(rstatix)
 library(Rmisc) 
 library(tidyverse)
-library(car) 
+
 library(sjstats)
 ```
 
-# Data
+```{r}
+library(readxl)
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
+library(afex)
+library(sjstats)
+library(car)
+library(lsr) 
+```
+
+# Data structure
+
+The files *data_timefreq_gamma.xlsx*, *data_timefreq_alpha.xlsx* contain the average time-frequency data in the gamma (25-45 Hz) and alpha (6-9 Hz) bands. These data are stored in the *summary* sheet and have the following structure:
+
+* $ID$                  -- unique ID identifying each participant
+
+* $Experiment$          -- Experiment 1, Experiment 2
+
+* $Category$            -- Familiar, Unfamiliar
+
+* $Presentation\_left$   -- average activation in the left aoi during presentation (object in full view after sliding onto the stage)
+
+* $Presentation\_right$  -- average activation in the right aoi during presentation (object in full view after sliding onto the stage)
+
+* $Occlusion\_left$      -- average activation in the left aoi during occlusion (object fully invisible after the occluder went up)
+
+* $Occlusion\_right$     -- average activation in the right aoi during occlusion (object fully invisible after the occluder went up)
+
+* $Trials$              -- number of artifact-free trials contributed by each infant
+
+The remaining sheets (*E1_familiar*, *E1_unfamiliar*, *E2_familiar*, *E2_unfamiliar*) contain individual channel data (averaged for each of the respective frequency ranges).
+
+# Read in the data
 
 Read in data (create two data frames: dfgamma, dfalpha).
 ```{r include=FALSE}
@@ -49,28 +82,6 @@ dfalpha$Experiment <- factor(dfalpha$Experiment)
 dfalpha$Category <- factor(dfalpha$Category)
 str(dfgamma)
 ```
-
-## Data structure
-
-The files *data_timefreq_gamma.xlsx*, *data_timefreq_alpha.xlsx* contain the average time-frequency data in the gamma (25-45 Hz) and alpha (6-9 Hz) bands. These data are stored in the *summary* sheet and have the following structure:
-
-* $ID$                  -- unique ID identifying each participant
-
-* $Experiment$          -- Experiment 1, Experiment 2
-
-* $Category$            -- Familiar, Unfamiliar
-
-* $Presentation\_left$   -- average activation in the left aoi during presentation (object in full view after sliding onto the stage)
-
-* $Presentation\_right$  -- average activation in the right aoi during presentation (object in full view after sliding onto the stage)
-
-* $Occlusion\_left$      -- average activation in the left aoi during occlusion (object fully invisible after the occluder went up)
-
-* $Occlusion\_right$     -- average activation in the right aoi during occlusion (object fully invisible after the occluder went up)
-
-* $Trials$              -- number of artifact-free trials contributed by each infant
-
-The remaining sheets (*E1_familiar*, *E1_unfamiliar*, *E2_familiar*, *E2_unfamiliar*) contain individual channel data (averaged for each of the respective frequency ranges).
 
 # Gamma (25-45 Hz)
 
@@ -110,14 +121,14 @@ eta_sq(aogamma, partial = TRUE)
 
 ### Presentation
 
-#### ANOVA
-
 Compute mean activation across hemispheres.
 Save it in a new variable (MEAN_presentation).
 ```{r}
 dfgamma <- dfgamma %>%
   mutate(MEAN_presentation = rowMeans(dfgamma[4:5]))
 ```
+
+#### ANOVA
 
 ```{r}
 leveneTest(MEAN_presentation ~ Experiment*Category, data = dfgamma)
@@ -180,10 +191,6 @@ pgamma <- ggplot(data = plotgamma,aes(x=Category, y = mean, color=Category, fill
 pgamma
 ```
 
-```{r include=FALSE}
-ggsave("plots/figuregammapres1.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
-```
-
 ```{r}
 m <- stat_summary(geom ="point", fun.y=mean, shape=15, size=4, color="yellow", fill="red", 
                   position = position_dodge(width = 0.75)) 
@@ -209,10 +216,6 @@ boxgamma <- ggplot(data = dfgamma, aes(x=Category, y=MEAN_presentation)) +
 boxgamma
 ```
 
-```{r include=FALSE}
-ggsave("plots/figuregammapres2.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
-```
-
 ```{r echo=FALSE}
 fgp <- ggarrange(pgamma, boxgamma,
           ncol = 2, widths = c(1.5,1),
@@ -225,7 +228,7 @@ annotate_figure(fgp,
 ```
 
 ```{r include=FALSE}
-ggsave("plots/figuregammapres_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+ggsave("plots_timefreq/fig3gammapresentation.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
 ```
 
 
