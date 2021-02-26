@@ -242,11 +242,11 @@ dfgamma <- dfgamma %>%
   mutate(MEAN_occlusion = rowMeans(dfgamma[6:7]))
 ```
 
+#### ANOVA
+
 ```{r}
 leveneTest(MEAN_occlusion ~ Experiment*Category, data = dfgamma)
 ```
-
-#### ANOVA
 
 Run the ANOVA.
 
@@ -291,10 +291,6 @@ pgammaocclusion <- ggplot(data = plotgammaocclusion,aes(x=Category, y = mean, co
 pgammaocclusion
 ```
 
-```{r include=FALSE}
-#ggsave("plots/figuregammaoccl1.png", plot = last_plot(), width = 17, height = 10, units = c("cm"))
-```
-
 ```{r}
 m <- stat_summary(geom ="point", fun.y=mean, shape=23, size=4, color="black", fill="yellow", 
                   position = position_dodge(width = 0.75)) 
@@ -320,10 +316,6 @@ boxgammaocclusion <- ggplot(data = dfgamma, aes(x=Category, y=MEAN_occlusion)) +
 boxgammaocclusion
 ```
 
-```{r include=FALSE}
-#ggsave("plots/figuregammaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
-```
-
 ```{r echo=FALSE}
 fgp <- ggarrange(pgammaocclusion, boxgammaocclusion,
           ncol = 2, widths = c(1.5,1),
@@ -336,7 +328,7 @@ annotate_figure(fgp,
 ```
 
 ```{r include=FALSE}
-#ggsave("plots/figuregammaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+ggsave("plots_timefreq/figu3gammaocclusion.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
 ```
 
 
@@ -377,6 +369,13 @@ eta_sq(aoalpha, partial = TRUE)
 
 ### Presentation
 
+Compute mean activation across hemispheres.
+Save it in a new variable (MEAN_presentation).
+```{r}
+dfalpha <- dfalpha %>%
+  mutate(MEAN_presentation = rowMeans(dfalpha[4:5]))
+```
+
 ```{r}
 longalphapres <- dfalpha %>%
   gather(key = Hemisphere, value = alpha, c("Presentation_left","Presentation_right"))
@@ -398,13 +397,6 @@ summary(aalphapres)
 ```
 
 #### Comparisons to baseline
-
-Compute mean activation across hemispheres.
-Save it in a new variable (MEAN_presentation).
-```{r}
-dfalpha <- dfalpha %>%
-  mutate(MEAN_presentation = rowMeans(dfalpha[4:5]))
-```
 
 ```{r}
 t.test(dfalpha$MEAN_presentation, mu = 0, alternative = "two.sided")
@@ -466,9 +458,7 @@ boxalphapres <- ggplot(data = dfalpha,
 
 boxalphapres
 ```
-```{r include=FALSE}
-ggsave("plots/figurealphapres2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
-```
+
 
 ```{r echo=FALSE}
 fgp <- ggarrange(palphapresentation, boxalphapres,
@@ -482,11 +472,16 @@ annotate_figure(fgp,
 ```
 
 ```{r include=FALSE}
-ggsave("plots/figurealphapres_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+ggsave("plots_timefreq/fig3alphapresentation.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
 ```
 
 
 ### Occlusion
+
+```{r}
+dfalpha <- dfalpha %>%
+  mutate(MEAN_occlusion = rowMeans(dfalpha[6:7]))
+```
 
 ```{r}
 longalphaocclusion <- dfalpha %>%
@@ -514,14 +509,13 @@ eta_sq(aalphaoccl, partial = TRUE)
 
 #### Figures
 
-Plot.
 ```{r}
-plotalphaocclusion <- longalphaocclusion %>%
+plotalphaocclusion <- dfalpha %>%
   group_by(Category) %>%
-  get_summary_stats(occlusion_alpha,type = "mean_se")
+  get_summary_stats(MEAN_occlusion,type = "mean_se")
 
 palphaocclusion <- ggplot(data = plotalphaocclusion,
-                          aes(x=Category, y = mean, fill =Category)) + #, color=Hemisphere, fill=Hemisphere,  group=Hemisphere)) +
+                          aes(x=Category, y = mean, color=Category, fill=Category,  group=Category)) +
    theme_light() +
           theme(strip.text = element_text(size = 12),
                 panel.grid.major.y = element_line(colour="grey75"),
@@ -532,10 +526,10 @@ palphaocclusion <- ggplot(data = plotalphaocclusion,
                 axis.title.y = element_text(size = 14, family = "Helvetica"),
                 legend.position="bottom",
                 axis.title.x = element_blank()) +
-  geom_bar(stat="identity", position=position_dodge(),width=.7,alpha = 1) +
+  geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
-  scale_fill_manual(values = c("black","gray50")) +
-  scale_color_manual(values = c("gray50","gray80")) +
+  scale_fill_manual(values = c("black","gray60", "black","gray60")) +
+  scale_color_manual(values = c("black","gray60", "black","gray60")) +
   scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-.6, .6)) 
 
 palphaocclusion
@@ -546,8 +540,8 @@ palphaocclusion
 m <- stat_summary(geom ="point", fun.y=mean, shape=23, size=4, color="black", fill="yellow", 
                   position = position_dodge(width = 0.75)) 
 
-boxalphaocclusion <- ggplot(data = longalphaocclusion,
-                            aes(x=Category, y=occlusion_alpha, fill = Hemisphere, color = Hemisphere)) +
+boxalphaocclusion <- ggplot(data = dfalpha,
+                            aes(x=Category, y=MEAN_occlusion, fill = Category, color = Category)) +
   theme_light() +
           theme(strip.text = element_text(size = 12),
                 panel.grid.major.y = element_line(colour="grey75"),
@@ -558,19 +552,14 @@ boxalphaocclusion <- ggplot(data = longalphaocclusion,
                 axis.title.y = element_text(size = 14, family = "Helvetica"),
                 legend.position="bottom",
                 axis.title.x = element_blank()) +
-  geom_boxplot(aes(fill=Hemisphere), position = position_dodge(.9), 
-               alpha = 1, outlier.shape = NA, width = .5) +
-  geom_jitter(aes(color=Hemisphere),position = position_jitterdodge(.25), size = 1) +
+  geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
+               alpha = .2, outlier.shape = NA, width = .5) +
+  geom_jitter(aes(color=Category),position = position_jitterdodge(.25), size = 1) +
   scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-2, 2)) +
-  scale_fill_manual(values = c("black","gray50")) +
-  scale_color_manual(values = c("gray50","gray80"))
-
+  scale_fill_manual(values = c("black", "gray60","black", "gray60")) +
+  scale_color_manual(values = c("black","gray60","black", "gray60")) 
 
 boxalphaocclusion
-```
-
-```{r include=FALSE}
-#ggsave("plots/figurealphaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
 ```
 
 ```{r echo=FALSE}
@@ -585,25 +574,19 @@ annotate_figure(fgp,
 ```
 
 ```{r include=FALSE}
-#ggsave("plots/figurealphaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+ggsave("plots_timefreq/fig3alphaocclusion.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
 ```
 
 #### Comparisons to baseline
 
-```{r}
-dfalpha <- dfalpha %>%
-  mutate(MEAN_occlusion = rowMeans(dfalpha[6:7]))
-```
 
 ```{r}
 aux <- dfalpha %>% filter(Category == "Familiar")
-
 t.test(aux$MEAN_occlusion, mu = 0, alternative = "two.sided")
 ```
 
 ```{r}
 aux <- dfalpha %>% filter(Category == "Unfamiliar")
-
 t.test(aux$MEAN_occlusion, mu = 0, alternative = "two.sided")
 cohensD(aux$MEAN_occlusion, mu = 0)
 ```
