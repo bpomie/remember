@@ -289,7 +289,7 @@ pgammaocclusion
 ```
 
 ```{r include=FALSE}
-ggsave("plots/figuregammaoccl1.png", plot = last_plot(), width = 17, height = 10, units = c("cm"))
+#ggsave("plots/figuregammaoccl1.png", plot = last_plot(), width = 17, height = 10, units = c("cm"))
 ```
 
 ```{r}
@@ -316,8 +316,9 @@ boxgammaocclusion <- ggplot(data = dfgamma, aes(x=Category, y=MEAN_occlusion)) +
 
 boxgammaocclusion
 ```
+
 ```{r include=FALSE}
-ggsave("plots/figuregammaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
+#ggsave("plots/figuregammaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
 ```
 
 ```{r echo=FALSE}
@@ -332,7 +333,7 @@ annotate_figure(fgp,
 ```
 
 ```{r include=FALSE}
-ggsave("plots/figuregammaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+#ggsave("plots/figuregammaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
 ```
 
 
@@ -513,11 +514,11 @@ eta_sq(aalphaoccl, partial = TRUE)
 Plot.
 ```{r}
 plotalphaocclusion <- longalphaocclusion %>%
-  group_by(Category, Hemisphere) %>%
+  group_by(Category) %>%
   get_summary_stats(occlusion_alpha,type = "mean_se")
 
 palphaocclusion <- ggplot(data = plotalphaocclusion,
-                          aes(x=Category, y = mean, color=Hemisphere, fill=Hemisphere,  group=Hemisphere)) +
+                          aes(x=Category, y = mean, fill =Category)) + #, color=Hemisphere, fill=Hemisphere,  group=Hemisphere)) +
    theme_light() +
           theme(strip.text = element_text(size = 12),
                 panel.grid.major.y = element_line(colour="grey75"),
@@ -566,7 +567,7 @@ boxalphaocclusion
 ```
 
 ```{r include=FALSE}
-ggsave("plots/figurealphaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
+#ggsave("plots/figurealphaoccl2.png", plot = last_plot(), width = 18, height = 10, units = c("cm"))
 ```
 
 ```{r echo=FALSE}
@@ -581,10 +582,29 @@ annotate_figure(fgp,
 ```
 
 ```{r include=FALSE}
-ggsave("plots/figurealphaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
+#ggsave("plots/figurealphaoccl_summary.png", plot = last_plot(), width = 17.5, height = 10, units = c("cm"))
 ```
 
 #### Comparisons to baseline
+
+```{r}
+dfalpha <- dfalpha %>%
+  mutate(MEAN_occlusion = rowMeans(dfalpha[6:7]))
+```
+
+```{r}
+aux <- dfalpha %>% filter(Category == "Familiar")
+
+t.test(aux$MEAN_occlusion, mu = 0, alternative = "two.sided")
+```
+
+```{r}
+aux <- dfalpha %>% filter(Category == "Unfamiliar")
+
+t.test(aux$MEAN_occlusion, mu = 0, alternative = "two.sided")
+cohensD(aux$MEAN_occlusion, mu = 0)
+```
+
 ```{r}
 dfalphafamiliar <- subset(dfalpha, Category == "Familiar")
 dfalphaunfamiliar <- subset(dfalpha, Category == "Unfamiliar")
