@@ -7,22 +7,6 @@ output:
     toc_float: yes
 ---
 
-```{r message=FALSE, warning=FALSE, , paged.print=FALSE, include=FALSE}
-library(readxl)
-
-library(tidyr)
-library(plyr)
-library(ggpubr)
-library(ggplot2)
-library(emmeans) 
-
-library(rstatix)
-library(Rmisc) 
-library(tidyverse)
-
-library(sjstats)
-```
-
 ```{r}
 library(readxl)
 library(tidyverse)
