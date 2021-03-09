@@ -161,9 +161,9 @@ pgamma <- ggplot(data = plotgamma,aes(x=Category, y = mean, color=Category, fill
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=14, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                axis.text.x= element_text(size=16, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16,face = "bold"),
                 legend.position="none",
                 axis.title.x = element_blank()) +
   geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
@@ -185,15 +185,16 @@ boxgamma <- ggplot(data = dfgamma, aes(x=Category, y=MEAN_presentation)) +
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=14, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                axis.text.x= element_text(size=14.5, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16, family = "Helvetica"),
                 legend.position="none",
                 axis.title.x = element_blank()) +
   geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
                alpha = .2, outlier.shape = NA, width = .5) +
   geom_jitter(aes(color=Category),position = position_jitterdodge(.15), size =1) +
-  scale_y_continuous(name=gamma~"-band activity("~mu~"V)", limits=c(-.4, .4)) +
+  scale_y_continuous(name=element_blank(), limits=c(-.55, .55),
+                     breaks=c(-.4,-.2,0,.2,.4)) +
   scale_fill_manual(values = c("black", "gray60")) +
   scale_color_manual(values = c("black", "gray60")) 
 
@@ -201,8 +202,8 @@ boxgamma
 ```
 
 ```{r echo=FALSE}
-fgp <- ggarrange(pgamma, boxgamma,
-          ncol = 2, widths = c(1.5,1),
+fgp <- ggarrange(pgamma, NULL, boxgamma,
+          ncol = 3, widths = c(1.5,.075,1),
           labels = c("1", "2"),
           common.legend = TRUE, legend = "none")
 
@@ -247,6 +248,14 @@ summary(agammaoccl)
 eta_sq(agammaoccl, partial = TRUE)
 ```
 
+#### Comparison to baseline
+```{r}
+t.test(dfgamma$MEAN_occlusion, mu = 0, alternative = "two.sided")
+cohensD(dfgamma$MEAN_occlusion, mu = 0)
+```
+
+
+
 #### Figures
 
 Plot.
@@ -261,16 +270,16 @@ pgammaocclusion <- ggplot(data = plotgammaocclusion,aes(x=Category, y = mean, co
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=12, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                axis.text.x= element_text(size=16, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16, family = "Helvetica"),
                 legend.position="none",
                 axis.title.x = element_blank()) +
   geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
   scale_fill_manual(values = c("black","gray60", "black")) +
   scale_color_manual(values = c("black","gray60", "black")) +
-  scale_y_continuous(name="Aamplitude (Hz)", limits=c(-.1, .2)) 
+  scale_y_continuous(name=(gamma~"-band activity("~mu~"V)"), limits=c(-.1, .2)) 
 
 pgammaocclusion
 ```
@@ -285,15 +294,16 @@ boxgammaocclusion <- ggplot(data = dfgamma, aes(x=Category, y=MEAN_occlusion)) +
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=12.5, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
+                axis.text.x= element_text(size=14.5, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16, family = "Helvetica"),
                 legend.position="none",
                 axis.title.x = element_blank()) +
   geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
                alpha = .2, outlier.shape = NA, width = .5) +
   geom_jitter(aes(color=Category),position = position_jitterdodge(.25), size = 1) +
-  scale_y_continuous(name="Amplitude (Hz)", limits=c(-.5, .5)) +
+  scale_y_continuous(name=element_blank(), limits=c(-.5, .5),
+                     breaks=c(-.4,-.2,0,.2,.4)) +
   scale_fill_manual(values = c("black", "gray60")) +
   scale_color_manual(values = c("black","gray60")) 
 
@@ -301,8 +311,8 @@ boxgammaocclusion
 ```
 
 ```{r echo=FALSE}
-fgp <- ggarrange(pgammaocclusion, boxgammaocclusion,
-          ncol = 2, widths = c(1.5,1),
+fgp <- ggarrange(pgammaocclusion, NULL, boxgammaocclusion,
+          ncol = 3, widths = c(1.5,.075,1),
           labels = c("1", "2"),
           common.legend = TRUE, legend = "none")
 
@@ -402,10 +412,10 @@ palphapresentation <- ggplot(data = plotalphapresentation,
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=12, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
-                legend.position="bottom",
+                axis.text.x= element_text(size=16, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16, family = "Helvetica"),
+                legend.position="none",
                 axis.title.x = element_blank()) +
   geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
@@ -428,15 +438,15 @@ boxalphapres <- ggplot(data = dfalpha,
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=12.5, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
-                legend.position="bottom",
+                axis.text.x= element_text(size=16, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16, family = "Helvetica"),
+                legend.position="none",
                 axis.title.x = element_blank()) +
   geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
                alpha = .2, outlier.shape = NA, width = .5) +
   geom_jitter(aes(color=Category),position = position_jitterdodge(.25), size = 1) +
-  scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-2, 2)) +
+  scale_y_continuous(name=element_blank(), limits=c(-2, 2)) +
   scale_fill_manual(values = c("black", "gray60","black", "gray60")) +
   scale_color_manual(values = c("black","gray60","black", "gray60")) 
 
@@ -445,10 +455,9 @@ boxalphapres
 
 
 ```{r echo=FALSE}
-fgp <- ggarrange(palphapresentation, boxalphapres,
-          ncol = 2, widths = c(1.5,1),
-          labels = c("1", "2"),
-          common.legend = TRUE, legend = "bottom")
+fgp <- ggarrange(palphapresentation, NULL, boxalphapres,
+          ncol = 3, widths = c(1.5,.075,1),
+          labels = c("1", "2"))
 
 annotate_figure(fgp,
                top = text_grob("Presentation: object fully visible", color = "black", face = "bold", size = 16))
@@ -505,10 +514,10 @@ palphaocclusion <- ggplot(data = plotalphaocclusion,
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=12, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
-                legend.position="bottom",
+                axis.text.x= element_text(size=16, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16, family = "Helvetica"),
+                legend.position="none",
                 axis.title.x = element_blank()) +
   geom_bar(stat="identity", position=position_dodge(),width=.7,alpha =.2) +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.1,position=position_dodge(.7)) +
@@ -531,15 +540,15 @@ boxalphaocclusion <- ggplot(data = dfalpha,
                 panel.grid.major.y = element_line(colour="grey75"),
                 panel.grid.minor.y = element_blank(),
                 panel.grid.major.x = element_blank(),
-                axis.text.x= element_text(size=12.5, angle=0),
-                axis.text.y= element_text(size=14),
-                axis.title.y = element_text(size = 14, family = "Helvetica"),
-                legend.position="bottom",
+                axis.text.x= element_text(size=16, angle=0),
+                axis.text.y= element_text(size=16),
+                axis.title.y = element_text(size = 16, family = "Helvetica"),
+                legend.position="none",
                 axis.title.x = element_blank()) +
   geom_boxplot(aes(fill=Category), position = position_dodge(.9), 
                alpha = .2, outlier.shape = NA, width = .5) +
   geom_jitter(aes(color=Category),position = position_jitterdodge(.25), size = 1) +
-  scale_y_continuous(name=alpha~"-band activity("~mu~"V)", limits=c(-2, 2)) +
+  scale_y_continuous(name=element_blank(), limits=c(-2, 2)) +
   scale_fill_manual(values = c("black", "gray60","black", "gray60")) +
   scale_color_manual(values = c("black","gray60","black", "gray60")) 
 
@@ -547,10 +556,9 @@ boxalphaocclusion
 ```
 
 ```{r echo=FALSE}
-fgp <- ggarrange(palphaocclusion, boxalphaocclusion,
-          ncol = 2, widths = c(1.5,1),
-          labels = c("1", "2"),
-          common.legend = TRUE, legend = "bottom")
+fgp <- ggarrange(palphaocclusion, NULL, boxalphaocclusion,
+          ncol = 3, widths = c(1.5,.075,1),
+          labels = c("1", "2"))
 
 annotate_figure(fgp,
                top = text_grob("Occlusion: object fully invisible", color = "black", face = "bold", size = 16))
