@@ -1,7 +1,7 @@
 # Nonverbal category knowledge limits the amount of information encoded in object representations
 Project repository for the study:
 
-Pomiechowska, B., & Gliga, T. (under review). Nonverbal category knowledge limits the amount of information encoded in object representations: EEG evidence from 12-month-old infants
+Pomiechowska, B., & Gliga, T. (2021). Nonverbal category knowledge limits the amount of information encoded in object representations: EEG evidence from 12-month-old infants. Royal Society Open Science. DOI: https://doi.org/10.1098/rsos.200782
 
 
 ## Structure
